@@ -24,7 +24,6 @@ def receive_json():
     if data:
         if isinstance(data, list):
             for i in range(len(data)):
-                data[i]["timestamp"] = dt
                 data[i]["trade"]["swapConfig"]["fromAmount"] = int(data[i]["trade"]["swapConfig"]["fromAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["fromDigits"])
                 data[i]["trade"]["swapConfig"]["toAmount"] = int(data[i]["trade"]["swapConfig"]["toAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["toDigits"])
                 del data[i]["trade"]["swapConfig"]["fromDigits"]
@@ -45,10 +44,31 @@ def receive_json():
                 for j in range(len(data[i]["wallet"])):
                     REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = data[i]["wallet"][j]["amount"]
                 data[i]["wallet"] = REF
-                collection.insert_one({'json_data': data[i]})
-        else:
-            data["timestamp"] = dt
-            collection.insert_one({'json_data': data})
+
+                collection.insert_one({
+                    "json_data": {
+                        "trade": {
+                            "cost": {
+                                "gas": data[i]["trade"]["swapConfig"]["gasCosts"],
+                                "fee": data[i]["trade"]["swapConfig"]["feeCosts"],
+                                "total": data[i]["trade"]["swapConfig"]["transactionCost"]
+                            },
+                            "exchange": {
+                                "rate":  data[i]["trade"]["swapConfig"]["exchangeRate"],
+                                "from": data[i]["trade"]["pair"]["from"],
+                                "to": data[i]["trade"]["pair"]["to"]
+                            }
+                        },
+                        "price": {
+                            "USD": 1.00,
+                            "EUR": 1 / data[i]["trade"]["swapConfig"]["fiatPrices"]["USD"],
+                            "SOL": data[i]["trade"]["solanaPrice"],
+                            "MATIC": data[i]["trade"]["maticPrice"]
+                        },
+                        "wallet": data[i]["wallet"],
+                        "timestamp": dt
+                    }
+                })
         return {'error': None}
     else:
         return {'error': 'Missing data'}
@@ -66,7 +86,7 @@ def get_all_json():
     for document in collection.find():
         result.append(document['json_data'])
     collection.delete_many({})
-    return {'data': result}
+    return {'size': len(result), 'data': result}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
