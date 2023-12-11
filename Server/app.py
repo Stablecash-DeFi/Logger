@@ -4,6 +4,7 @@ bottle.BaseRequest.MEMFILE_MAX =  1024 * 1024
 from bottle import Bottle, request, response
 import os
 from pymongo import MongoClient
+from datetime import datetime, timezone
 
 app = Bottle()
 
@@ -18,15 +19,15 @@ def receive_json():
     if auth_token != f'Bearer {expected_token}':
         response.status = 401
         return {'error': 'Unauthorized'}
-
+    dt = int(datetime.now().replace(tzinfo=timezone.utc).timestamp())
     data = request.json
     if data:
         if isinstance(data, list):
             for i in range(len(data)):
-                data["timestamp"][i] = int(dt.replace(tzinfo=timezone.utc).timestamp())
+                data["timestamp"][i] = dt
                 collection.insert_one({'json_data': data[i]})
         else:
-            data["timestamp"] = int(dt.replace(tzinfo=timezone.utc).timestamp())
+            data["timestamp"] = dt
             collection.insert_one({'json_data': data})
         return {'error': None}
     else:
