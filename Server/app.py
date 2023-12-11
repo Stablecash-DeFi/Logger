@@ -46,7 +46,7 @@ def get_all_json():
     for document in collection.find():
         result.append(document['json_data'])
     collection.delete_many({})
-    return result
+    return {'data': result}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
