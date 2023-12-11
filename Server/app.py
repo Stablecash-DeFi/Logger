@@ -19,16 +19,13 @@ def convert_market_rate(amount, from_currency, to_currency, fiat_prices):
         amount /= float(fiat_prices[to_currency])
     return amount
 
-def rentability_percentage(pairs, fiat_prices, rate):
-    plus = 100 * rate
-    swap_gain = plus - 100
-    if (pairs['from']['currency'] == 'EUR' and pairs['to']['currency'] != 'EUR') or (pairs['to']['currency'] == 'EUR' and pairs['from']['currency'] != 'EUR'):
-        exchangeRate = plus
-        marketRate = convert_market_rate(100, pairs['from']['currency'], pairs['to']['currency'], fiat_prices)
-        corelleration_swap_to_market_benefices = exchangeRate - marketRate
-        swap_gain = convert_market_rate(corelleration_swap_to_market_benefices, pairs['to']['currency'], 'USD', fiat_prices)
-    if pairs['from']['currency'] == 'EUR' and pairs['to']['currency'] == 'EUR':
-        swap_gain = convert_market_rate(swap_gain, pairs['from']['currency'], 'USD', fiat_prices)
+def rentability_percentage(from_currency, to_currency, price, rate):
+    swap_gain = 100 * rate - 100
+    if (from_currency == 'EUR' and to_currency != 'EUR') or (to_currency == 'EUR' and from_currency != 'EUR'):
+        corelleration = 100 * rate - convert_market_rate(100, from_currency, to_currency, fiat_prices)
+        swap_gain = convert_market_rate(corelleration, to_currency, 'USD', fiat_prices)
+    if from_currency == to_currency == 'EUR':
+        swap_gain = convert_market_rate(swap_gain, from_currency, 'USD', fiat_prices)
     return swap_gain
 
 @app.post('/')
@@ -64,31 +61,36 @@ def receive_json():
                     REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = data[i]["wallet"][j]["amount"]
                 data[i]["wallet"] = REF
 
-                collection.insert_one({
-                    "json_data": {
-                        "trade": {
-                            "cost": {
-                                "gas": data[i]["trade"]["swapConfig"]["gasCosts"],
-                                "fee": data[i]["trade"]["swapConfig"]["feeCosts"],
-                                "total": data[i]["trade"]["swapConfig"]["transactionCost"]
-                            },
-                            "exchange": {
-                                "rate":  data[i]["trade"]["swapConfig"]["exchangeRate"],
-                                "from": data[i]["trade"]["pair"]["from"],
-                                "to": data[i]["trade"]["pair"]["to"]
-                            },
-                            "rentability": rentability_percentage
+                d = {
+                    "trade": {
+                        "cost": {
+                            "gas": data[i]["trade"]["swapConfig"]["gasCosts"],
+                            "fee": data[i]["trade"]["swapConfig"]["feeCosts"],
+                            "total": data[i]["trade"]["swapConfig"]["transactionCost"]
                         },
-                        "price": {
-                            "USD": 1.00,
-                            "EUR": data[i]["trade"]["swapConfig"]["fiatPrices"]["USD"],
-                            "SOL": data[i]["trade"]["solanaPrice"],
-                            "MAT": data[i]["trade"]["maticPrice"]
+                        "exchange": {
+                            "rate":  data[i]["trade"]["swapConfig"]["exchangeRate"],
+                            "from": data[i]["trade"]["pair"]["from"],
+                            "to": data[i]["trade"]["pair"]["to"]
                         },
-                        "wallet": data[i]["wallet"],
-                        "timestamp": dt
-                    }
-                })
+                        "rentability": None,
+                    },
+                    "price": {
+                        "USD": 1.00,
+                        "EUR": data[i]["trade"]["swapConfig"]["fiatPrices"]["USD"],
+                        "SOL": data[i]["trade"]["solanaPrice"],
+                        "MAT": data[i]["trade"]["maticPrice"]
+                    },
+                    "wallet": data[i]["wallet"],
+                    "timestamp": dt
+                }
+                d["trade"]["rentability"] = rentability_percentage(
+                    from_currency = d["trade"]["exchange"]["from"]["currency"],
+                    to_currency = d["trade"]["exchange"]["to"]["currency"],
+                    price = d["price"],
+                    rate = d["trade"]["exchange"]["rate"]
+                )
+                collection.insert_one({"json_data": d})
         return {'error': None}
     else:
         return {'error': 'Missing data'}
