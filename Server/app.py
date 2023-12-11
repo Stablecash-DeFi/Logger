@@ -58,7 +58,7 @@ def receive_json():
 
                 REF = {}
                 for j in range(len(data[i]["wallet"])):
-                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = data[i]["wallet"][j]["amount"]
+                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = float(f'{data[i]["wallet"][j]["amount"]:.6f}')
                 data[i]["wallet"] = REF
 
                 d = {
@@ -69,7 +69,7 @@ def receive_json():
                             "total": data[i]["trade"]["swapConfig"]["transactionCost"]
                         },
                         "exchange": {
-                            "rate":  data[i]["trade"]["swapConfig"]["exchangeRate"],
+                            "rate":  float(f'{data[i]["trade"]["swapConfig"]["exchangeRate"]:.6f}'),
                             "from": data[i]["trade"]["pair"]["from"],
                             "to": data[i]["trade"]["pair"]["to"]
                         },
@@ -90,7 +90,7 @@ def receive_json():
                     price = d["price"],
                     rate = d["trade"]["exchange"]["rate"]
                 )
-                d["trade"]["rentability"] = float(f"{renta:.5f}")
+                d["trade"]["rentability"] = float(f"{renta:.6f}")
                 collection.insert_one({"json_data": d})
         return {'error': None}
     else:
