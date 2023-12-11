@@ -5,7 +5,7 @@ from pymongo import MongoClient
 app = Bottle()
 app.config['max_body'] = 1024 * 1024
 
-client = MongoClient('mongodb://mongo:27017/')
+client = MongoClient('mongodb://mongodb:27017/')
 db = client['json_db']
 collection = db['json_collection']
 
