@@ -93,15 +93,17 @@ def receive_json():
                         "MAT": data[i]["trade"]["maticPrice"]
                     },
                     "wallet": {
-                        "stable_coins": data[i]["wallet"],
-                        "value": None,
+                        "id": None,
+                        "data": {
+                            "stable_coins": data[i]["wallet"],
+                            "value": None,
+                        },
                         "timestamp": dt
                     },
                     "timestamp": dt
                 }
-                d["wallet"]["value"] = wallet_value(d["wallet"]["stable_coins"], d["price"])
-                d["wallet"]["id"] = str(d["wallet"])
-                # hashlib.sha256(texte.encode()).hexdigest()
+                d["wallet"]["data"]["value"] = wallet_value(d["wallet"]["data"]["stable_coins"], d["price"])
+                d["wallet"]["id"] = hashlib.sha256(str(d["wallet"]["data"]).encode()).hexdigest()
                 renta = rentability(
                     amount = 100,
                     from_currency = d["trade"]["exchange"]["from"]["currency"],
