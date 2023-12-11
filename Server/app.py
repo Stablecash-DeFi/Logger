@@ -99,8 +99,8 @@ def receive_json():
                     },
                     "timestamp": dt
                 }
-                data[i]["wallet"]["value"] = wallet_value(data[i]["wallet"], data[i]["price"])
-                data[i]["wallet"]["id"] = str(data[i]["wallet"])
+                d["wallet"]["value"] = wallet_value(d["wallet"]["stable_coins"], d["price"])
+                d["wallet"]["id"] = str(d["wallet"])
                 # hashlib.sha256(texte.encode()).hexdigest()
                 renta = rentability(
                     amount = 100,
