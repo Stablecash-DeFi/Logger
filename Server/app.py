@@ -1,12 +1,11 @@
 import bottle
-bottle.BaseRequest.MEMFILE_MAX = 1024 * 1024 * 1024
+bottle.BaseRequest.MEMFILE_MAX =  1024 * 1024
 
 from bottle import Bottle, request, response
 import os
 from pymongo import MongoClient
 
 app = Bottle()
-app.config['max_body'] = 1024 * 1024 * 1024
 
 client = MongoClient('mongodb://mongodb:27017/')
 db = client['json_db']
