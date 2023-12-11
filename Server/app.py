@@ -20,7 +20,7 @@ def convert_market_rate(amount, from_currency, to_currency, fiat_prices):
         amount /= float(fiat_prices[to_currency])
     return amount
 
-def rentability(amount, from_currency, to_currency, price, rate):
+def rentability(amount, from_currency, to_currency, fiat_prices, rate):
     swap_gain = amount * rate - amount
     if (from_currency == 'EUR' and to_currency != 'EUR') or (to_currency == 'EUR' and from_currency != 'EUR'):
         corelleration = amount * rate - convert_market_rate(amount, from_currency, to_currency, fiat_prices)
