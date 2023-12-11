@@ -1,8 +1,9 @@
+import bottle
+bottle.BaseRequest.MEMFILE_MAX = 1024 * 1024 * 1024
+
 from bottle import Bottle, request, response
 import os
 from pymongo import MongoClient
-
-bottle.BaseRequest.MEMFILE_MAX = 1024 * 1024 * 1024
 
 app = Bottle()
 app.config['max_body'] = 1024 * 1024 * 1024
