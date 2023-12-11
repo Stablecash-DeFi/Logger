@@ -24,7 +24,7 @@ def receive_json():
     if data:
         if isinstance(data, list):
             for i in range(len(data)):
-                data["timestamp"][i] = dt
+                data[i]["timestamp"] = dt
                 collection.insert_one({'json_data': data[i]})
         else:
             data["timestamp"] = dt
