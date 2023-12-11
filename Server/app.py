@@ -3,7 +3,7 @@ import os
 from pymongo import MongoClient
 
 app = Bottle()
-app.config['max_body'] = 1024 * 1024
+app.config['max_body'] = 1024 * 1024 * 1024
 
 client = MongoClient('mongodb://mongodb:27017/')
 db = client['json_db']
