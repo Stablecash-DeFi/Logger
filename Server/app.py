@@ -35,7 +35,7 @@ def wallet_value(wallet, fiat_prices):
         "USD": sum([wallet[i] for i in wallet if i[-3:] == 'USD']),
         "total": None
     }
-    value["total"] = value["USD"] + convert_market_rate(value["EUR"], "EUR", "USD", 1)
+    value["total"] = value["USD"] + convert_market_rate(value["EUR"], "EUR", "USD")
     return value
 
 @app.post('/')
