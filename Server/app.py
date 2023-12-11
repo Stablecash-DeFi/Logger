@@ -25,6 +25,26 @@ def receive_json():
         if isinstance(data, list):
             for i in range(len(data)):
                 data[i]["timestamp"] = dt
+                data[i]["trade"]["swapConfig"]["fromAmount"] = int(data[i]["trade"]["swapConfig"]["fromAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["fromDigits"])
+                data[i]["trade"]["swapConfig"]["toAmount"] = int(data[i]["trade"]["swapConfig"]["toAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["toDigits"])
+                del data[i]["trade"]["swapConfig"]["fromDigits"]
+                del data[i]["trade"]["swapConfig"]["toDigits"]
+                data[i]["trade"]["swapConfig"]["gasCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
+                data[i]["trade"]["swapConfig"]["feeCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
+
+                data[i]["trade"]["swapConfig"]["pair"]["from"] = {
+                    "wallet_id": f'{data[i]["trade"]["swapConfig"]["pair"]["from"]["chain"]}:{data[i]["trade"]["swapConfig"]["pair"]["from"]["token"]}'
+                    "currency": data[i]["trade"]["swapConfig"]["pair"]["from"]["currency"]
+                }
+                data[i]["trade"]["swapConfig"]["pair"]["to"] = {
+                    "wallet_id": f'{data[i]["trade"]["swapConfig"]["pair"]["to"]["chain"]}:{data[i]["trade"]["swapConfig"]["pair"]["to"]["token"]}'
+                    "currency": data[i]["trade"]["swapConfig"]["pair"]["to"]["currency"]
+                }
+
+                REF = {}
+                for j in range(len(data[i]["wallet"])):
+                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["token"]}'] = data[i]["wallet"][j]["amount"]
+                data[i]["wallet"] = REF
                 collection.insert_one({'json_data': data[i]})
         else:
             data["timestamp"] = dt
