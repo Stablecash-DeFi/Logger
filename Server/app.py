@@ -43,7 +43,7 @@ def receive_json():
 
                 REF = {}
                 for j in range(len(data[i]["wallet"])):
-                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["token"]}'] = data[i]["wallet"][j]["amount"]
+                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = data[i]["wallet"][j]["amount"]
                 data[i]["wallet"] = REF
                 collection.insert_one({'json_data': data[i]})
         else:
