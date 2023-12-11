@@ -12,6 +12,25 @@ client = MongoClient('mongodb://mongodb:27017/')
 db = client['json_db']
 collection = db['json_collection']
 
+def convert_market_rate(amount, from_currency, to_currency, fiat_prices):
+    if (from_currency == "EUR"):
+        amount *= float(fiat_prices[from_currency])
+    elif (to_currency == "EUR"):
+        amount /= float(fiat_prices[to_currency])
+    return amount
+
+def rentability_percentage(pairs, fiat_prices, rate):
+    plus = 100 * rate
+    swap_gain = plus - 100
+    if (pairs['from']['currency'] == 'EUR' and pairs['to']['currency'] != 'EUR') or (pairs['to']['currency'] == 'EUR' and pairs['from']['currency'] != 'EUR'):
+        exchangeRate = plus
+        marketRate = convert_market_rate(100, pairs['from']['currency'], pairs['to']['currency'], fiat_prices)
+        corelleration_swap_to_market_benefices = exchangeRate - marketRate
+        swap_gain = convert_market_rate(corelleration_swap_to_market_benefices, pairs['to']['currency'], 'USD', fiat_prices)
+    if pairs['from']['currency'] == 'EUR' and pairs['to']['currency'] == 'EUR':
+        swap_gain = convert_market_rate(swap_gain, pairs['from']['currency'], 'USD', fiat_prices)
+    return swap_gain
+
 @app.post('/')
 def receive_json():
     auth_token = request.headers.get('Authorization')
@@ -57,13 +76,14 @@ def receive_json():
                                 "rate":  data[i]["trade"]["swapConfig"]["exchangeRate"],
                                 "from": data[i]["trade"]["pair"]["from"],
                                 "to": data[i]["trade"]["pair"]["to"]
-                            }
+                            },
+                            "rentability": rentability_percentage
                         },
                         "price": {
                             "USD": 1.00,
-                            "EUR": 1 / data[i]["trade"]["swapConfig"]["fiatPrices"]["USD"],
+                            "EUR": data[i]["trade"]["swapConfig"]["fiatPrices"]["USD"],
                             "SOL": data[i]["trade"]["solanaPrice"],
-                            "MATIC": data[i]["trade"]["maticPrice"]
+                            "MAT": data[i]["trade"]["maticPrice"]
                         },
                         "wallet": data[i]["wallet"],
                         "timestamp": dt
