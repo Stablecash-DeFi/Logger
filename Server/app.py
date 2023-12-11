@@ -36,7 +36,7 @@ def receive_json():
                     "wallet_id": f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}',
                     "currency": data[i]["trade"]["pair"]["from"]["currency"]
                 }
-                data[i]["trade"]["swapConfig"]["pair"]["to"] = {
+                data[i]["trade"]["pair"]["to"] = {
                     "wallet_id": f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}',
                     "currency": data[i]["trade"]["pair"]["to"]["currency"]
                 }
