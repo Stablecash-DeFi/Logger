@@ -3,6 +3,7 @@ bottle.BaseRequest.MEMFILE_MAX =  1024 * 1024
 
 from bottle import Bottle, request, response
 import os
+import hashlib
 from pymongo import MongoClient
 from datetime import datetime, timezone
 
@@ -19,14 +20,23 @@ def convert_market_rate(amount, from_currency, to_currency, fiat_prices):
         amount /= float(fiat_prices[to_currency])
     return amount
 
-def rentability_percentage(from_currency, to_currency, price, rate):
-    swap_gain = 100 * rate - 100
+def rentability(amount, from_currency, to_currency, price, rate):
+    swap_gain = amount * rate - amount
     if (from_currency == 'EUR' and to_currency != 'EUR') or (to_currency == 'EUR' and from_currency != 'EUR'):
-        corelleration = 100 * rate - convert_market_rate(100, from_currency, to_currency, fiat_prices)
+        corelleration = amount * rate - convert_market_rate(amount, from_currency, to_currency, fiat_prices)
         swap_gain = convert_market_rate(corelleration, to_currency, 'USD', fiat_prices)
     if from_currency == to_currency == 'EUR':
         swap_gain = convert_market_rate(swap_gain, from_currency, 'USD', fiat_prices)
     return swap_gain
+
+def wallet_value(wallet, fiat_prices):
+    value = {
+        "EUR": sum([wallet[i] for i in wallet if i[-3:] == 'EUR']),
+        "USD": sum([wallet[i] for i in wallet if i[-3:] == 'USD']),
+        "total": None
+    }
+    value["total"] = value["USD"] + convert_market_rate(value["EUR"], "EUR", "USD", 1)
+    return value
 
 @app.post('/')
 def receive_json():
@@ -82,10 +92,18 @@ def receive_json():
                         "SOL": data[i]["trade"]["solanaPrice"],
                         "MAT": data[i]["trade"]["maticPrice"]
                     },
-                    "wallet": data[i]["wallet"],
+                    "wallet": {
+                        "stable_coins": data[i]["wallet"],
+                        "value": None,
+                        "timestamp": dt
+                    },
                     "timestamp": dt
                 }
-                renta = rentability_percentage(
+                data[i]["wallet"]["value"] = wallet_value(data[i]["wallet"], data[i]["price"])
+                data[i]["wallet"]["id"] = str(data[i]["wallet"])
+                # hashlib.sha256(texte.encode()).hexdigest()
+                renta = rentability(
+                    amount = 100
                     from_currency = d["trade"]["exchange"]["from"]["currency"],
                     to_currency = d["trade"]["exchange"]["to"]["currency"],
                     price = d["price"],
