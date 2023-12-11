@@ -58,7 +58,8 @@ def receive_json():
 
                 REF = {}
                 for j in range(len(data[i]["wallet"])):
-                    REF[f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}'] = float(f'{data[i]["wallet"][j]["amount"]:.6f}')
+                    index = f'{data[i]["wallet"][j]["chain"]}:{data[i]["wallet"][j]["address"]}:{data[i]["wallet"][j]["currency"]}'
+                    REF[index] = float(f'{data[i]["wallet"][j]["amount"]:.6f}')
                 data[i]["wallet"] = REF
 
                 d = {
