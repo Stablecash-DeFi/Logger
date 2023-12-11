@@ -84,12 +84,13 @@ def receive_json():
                     "wallet": data[i]["wallet"],
                     "timestamp": dt
                 }
-                d["trade"]["rentability"] = rentability_percentage(
+                renta = rentability_percentage(
                     from_currency = d["trade"]["exchange"]["from"]["currency"],
                     to_currency = d["trade"]["exchange"]["to"]["currency"],
                     price = d["price"],
                     rate = d["trade"]["exchange"]["rate"]
                 )
+                d["trade"]["rentability"] = float(f"{renta:.5f}")
                 collection.insert_one({"json_data": d})
         return {'error': None}
     else:
