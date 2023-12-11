@@ -23,8 +23,10 @@ def receive_json():
     if data:
         if isinstance(data, list):
             for i in range(len(data)):
+                data["timestamp"][i] = int(dt.replace(tzinfo=timezone.utc).timestamp())
                 collection.insert_one({'json_data': data[i]})
         else:
+            data["timestamp"] = int(dt.replace(tzinfo=timezone.utc).timestamp())
             collection.insert_one({'json_data': data})
         return {'error': None}
     else:
@@ -42,6 +44,7 @@ def get_all_json():
     result = []
     for document in collection.find():
         result.append(document['json_data'])
+    collection.delete_many({})
     return {'json_data': result}
 
 if __name__ == '__main__':
