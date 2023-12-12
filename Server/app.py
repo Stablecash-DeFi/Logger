@@ -96,9 +96,9 @@ def receive_json():
                     rate = d["exchange"]["rate"]
                 )
                 d["rentability"] = float(f"{renta:.6f}")
-                
+
                 wallet = {
-                    "id": None,
+                    "_id": None,
                     "data": {
                         "stable_coins": data[i]["wallet"],
                         "value": None,
