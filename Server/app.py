@@ -130,8 +130,10 @@ def get_all_json():
 
     result = {"trades": [], "wallets": []}
     for document in db['trades'].find():
+        del document["_id"]
         result["trades"].append(document)
     for document in db['wallets'].find():
+        del document["_id"]
         result["wallets"].append(document)
 
     db['trades'].delete_many({})
