@@ -33,8 +33,8 @@ def wallet_value(wallet, fiat_prices):
     ret = {"by_chain": {}, "total": 0}
     for chain in ["137", "solana"]:
         ret["by_chain"][chain] = {
-            "EUR": sum([wallet[i] for i in wallet if i[-3:] == 'EUR']),
-            "USD": sum([wallet[i] for i in wallet if i[-3:] == 'USD']),
+            "EUR": sum([wallet[i] for i in {i: wallet[i] for i in wallet if i.split(":")[0] == chain} if i[-3:] == 'EUR' ]),
+            "USD": sum([wallet[i] for i in {i: wallet[i] for i in wallet if i.split(":")[0] == chain} if i[-3:] == 'USD']),
             "total": None
         }
         ret["by_chain"][chain]["total"] = ret["by_chain"][chain]["USD"] + convert_market_rate(ret["by_chain"][chain]["EUR"], "EUR", "USD", fiat_prices)
@@ -57,8 +57,8 @@ def receive_json():
                 data[i]["trade"]["swapConfig"]["toAmount"] = int(data[i]["trade"]["swapConfig"]["toAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["toDigits"])
                 del data[i]["trade"]["swapConfig"]["fromDigits"]
                 del data[i]["trade"]["swapConfig"]["toDigits"]
-                data[i]["trade"]["swapConfig"]["gasCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
-                data[i]["trade"]["swapConfig"]["feeCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
+                data[i]["trade"]["swapConfig"]["gasCosts"] = [float(f'{cost["amountUsd"]}:.6f}') for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
+                data[i]["trade"]["swapConfig"]["feeCosts"] = [float(f'{cost["amountUsd"]}:.6f}') for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
 
                 data[i]["trade"]["pair"]["from"] = f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}:{data[i]["trade"]["pair"]["from"]["currency"]}'
                 data[i]["trade"]["pair"]["to"] = f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}:{data[i]["trade"]["pair"]["to"]["currency"]}'
