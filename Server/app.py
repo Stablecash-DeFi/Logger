@@ -30,13 +30,16 @@ def rentability(amount, from_currency, to_currency, fiat_prices, rate):
     return swap_gain
 
 def wallet_value(wallet, fiat_prices):
-    value = {
-        "EUR": sum([wallet[i] for i in wallet if i[-3:] == 'EUR']),
-        "USD": sum([wallet[i] for i in wallet if i[-3:] == 'USD']),
-        "total": None
-    }
-    value["total"] = value["USD"] + convert_market_rate(value["EUR"], "EUR", "USD", fiat_prices)
-    return value
+    ret = {"by_chain": {}, "total": 0}
+    for chain in ["137", "solana"]:
+        ret["by_chain"][chain] = {
+            "EUR": sum([wallet[i] for i in wallet if i[-3:] == 'EUR']),
+            "USD": sum([wallet[i] for i in wallet if i[-3:] == 'USD']),
+            "total": None
+        }
+        ret["by_chain"][chain]["total"] = ret["by_chain"][chain]["USD"] + convert_market_rate(ret["by_chain"][chain]["EUR"], "EUR", "USD", fiat_prices)
+        ret["total"] += ret["by_chain"][chain]["total"]
+    return ret
 
 @app.post('/')
 def receive_json():
@@ -57,14 +60,8 @@ def receive_json():
                 data[i]["trade"]["swapConfig"]["gasCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
                 data[i]["trade"]["swapConfig"]["feeCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
 
-                data[i]["trade"]["pair"]["from"] = {
-                    "wallet_id": f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}',
-                    "currency": data[i]["trade"]["pair"]["from"]["currency"]
-                }
-                data[i]["trade"]["pair"]["to"] = {
-                    "wallet_id": f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}',
-                    "currency": data[i]["trade"]["pair"]["to"]["currency"]
-                }
+                data[i]["trade"]["pair"]["from"] = f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}:{data[i]["trade"]["pair"]["from"]["currency"]}'
+                data[i]["trade"]["pair"]["to"] = f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}:{data[i]["trade"]["pair"]["to"]["currency"]}',"]
 
                 REF = {}
                 for j in range(len(data[i]["wallet"])):
