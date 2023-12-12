@@ -61,7 +61,7 @@ def receive_json():
                 data[i]["trade"]["swapConfig"]["feeCosts"] = [float(cost["amountUsd"]) for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
 
                 data[i]["trade"]["pair"]["from"] = f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}:{data[i]["trade"]["pair"]["from"]["currency"]}'
-                data[i]["trade"]["pair"]["to"] = f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}:{data[i]["trade"]["pair"]["to"]["currency"]}',"]
+                data[i]["trade"]["pair"]["to"] = f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}:{data[i]["trade"]["pair"]["to"]["currency"]}'
 
                 REF = {}
                 for j in range(len(data[i]["wallet"])):
