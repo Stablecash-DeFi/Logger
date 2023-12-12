@@ -106,7 +106,7 @@ def receive_json():
                     "timestamp": dt
                 }
                 wallet["data"]["value"] = wallet_value(wallet["data"]["stable_coins"], d["price"])
-                wallet["id"] = hashlib.sha256(str(wallet["data"]).encode()).hexdigest()
+                wallet["_id"] = hashlib.sha256(str(wallet["data"]).encode()).hexdigest()
 
                 db['trades'].insert_one({"json_data": d})
                 db['wallets'].insert_one({"json_data": wallet})
