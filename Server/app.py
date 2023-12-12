@@ -11,7 +11,6 @@ app = Bottle()
 
 client = MongoClient('mongodb://mongodb:27017/')
 db = client['json_db']
-collection = db['json_collection']
 
 def convert_market_rate(amount, from_currency, to_currency, fiat_prices):
     if (from_currency == "EUR"):
@@ -89,18 +88,8 @@ def receive_json():
                         "SOL": data[i]["trade"]["solanaPrice"],
                         "MAT": data[i]["trade"]["maticPrice"]
                     },
-                    "wallet": {
-                        "id": None,
-                        "data": {
-                            "stable_coins": data[i]["wallet"],
-                            "value": None,
-                        },
-                        "timestamp": dt
-                    },
                     "timestamp": dt
                 }
-                d["wallet"]["data"]["value"] = wallet_value(d["wallet"]["data"]["stable_coins"], d["price"])
-                d["wallet"]["id"] = hashlib.sha256(str(d["wallet"]["data"]).encode()).hexdigest()
                 renta = rentability(
                     amount = 100,
                     from_currency = d["trade"]["exchange"]["from"][-3:],
@@ -109,7 +98,21 @@ def receive_json():
                     rate = d["trade"]["exchange"]["rate"]
                 )
                 d["trade"]["rentability"] = float(f"{renta:.6f}")
-                collection.insert_one({"json_data": d})
+
+                wallet = {
+                    "id": None,
+                    "data": {
+                        "stable_coins": data[i]["wallet"],
+                        "value": None,
+                    },
+                    "timestamp": dt
+                }
+                wallet["data"]["value"] = wallet_value(wallet["data"]["stable_coins"], d["price"])
+                wallet["id"] = hashlib.sha256(str(wallet["data"]).encode()).hexdigest()
+
+                db['trades'].insert_one({"json_data": d})
+                db['wallets'].insert_one({"json_data": wallet})
+
         return {'error': None}
     else:
         return {'error': 'Missing data'}
@@ -123,10 +126,14 @@ def get_all_json():
         response.status = 401
         return {'error': 'Unauthorized'}
 
-    result = []
-    for document in collection.find():
-        result.append(document['json_data'])
-    collection.delete_many({})
+    result = {"trades": [], "wallets": []}
+    for document in db['trades'].find():
+        result["trades"].append(document['json_data'])
+    for document in db['wallets'].find():
+        result["wallets"].append(document['json_data'])
+
+    db['trades'].delete_many({})
+    db['wallets'].delete_many({})
     return {'size': len(result), 'data': result}
 
 if __name__ == '__main__':
