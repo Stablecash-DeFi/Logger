@@ -105,7 +105,7 @@ def receive_json():
                     amount = 100,
                     from_currency = d["trade"]["exchange"]["from"][-3:],
                     to_currency = d["trade"]["exchange"]["to"][-3:],
-                    price = d["price"],
+                    fiat_prices = d["price"],
                     rate = d["trade"]["exchange"]["rate"]
                 )
                 d["trade"]["rentability"] = float(f"{renta:.6f}")
