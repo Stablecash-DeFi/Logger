@@ -110,6 +110,11 @@ def receive_json():
 
                 db['trades'].insert_one({"json_data": d})
                 db['wallets'].insert_one(wallet)
+                result = db['wallets'].update_one(
+                    {"_id": wallet["_id"]},
+                    {"$set": wallet},
+                    upsert=True
+                )
 
         return {'error': None}
     else:
