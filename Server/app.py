@@ -57,8 +57,8 @@ def receive_json():
                 data[i]["trade"]["swapConfig"]["toAmount"] = int(data[i]["trade"]["swapConfig"]["toAmount"]) / pow(10, data[i]["trade"]["swapConfig"]["toDigits"])
                 del data[i]["trade"]["swapConfig"]["fromDigits"]
                 del data[i]["trade"]["swapConfig"]["toDigits"]
-                data[i]["trade"]["swapConfig"]["gasCosts"] = [float(f'{cost["amountUsd"]}:.6f}') for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
-                data[i]["trade"]["swapConfig"]["feeCosts"] = [float(f'{cost["amountUsd"]}:.6f}') for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
+                data[i]["trade"]["swapConfig"]["gasCosts"] = [float(f'{cost["amountUsd"]:.6f}') for cost in data[i]["trade"]["swapConfig"]["gasCosts"]]
+                data[i]["trade"]["swapConfig"]["feeCosts"] = [float(f'{cost["amountUsd"]:.6f}') for cost in data[i]["trade"]["swapConfig"]["feeCosts"]]
 
                 data[i]["trade"]["pair"]["from"] = f'{data[i]["trade"]["pair"]["from"]["chain"]}:{data[i]["trade"]["pair"]["from"]["token"]}:{data[i]["trade"]["pair"]["from"]["currency"]}'
                 data[i]["trade"]["pair"]["to"] = f'{data[i]["trade"]["pair"]["to"]["chain"]}:{data[i]["trade"]["pair"]["to"]["token"]}:{data[i]["trade"]["pair"]["to"]["currency"]}'
