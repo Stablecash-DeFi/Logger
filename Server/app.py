@@ -109,11 +109,8 @@ def receive_json():
                 wallet["_id"] = hashlib.sha256(str(wallet["data"]).encode()).hexdigest()
 
                 db['trades'].insert_one(d)
-                db['wallets'].update_one(
-                    {"_id": wallet["_id"]},
-                    {"$set": wallet},
-                    upsert=True
-                )
+                if db['wallets'].find_one({"_id": wallet["_id"]}) is None:
+                    db['wallets'].insert_one(wallet)
 
         return {'error': None}
     else:
