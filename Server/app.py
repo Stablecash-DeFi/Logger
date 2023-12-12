@@ -88,14 +88,15 @@ def receive_json():
                     "rentability": None,
                     "timestamp": dt
                 }
-                d["rentability"] = float(f"{rentability(
+                renta = rentability(
                     amount = 100,
                     from_currency = d["exchange"]["from"][-3:],
                     to_currency = d["exchange"]["to"][-3:],
                     fiat_prices = d["price"],
                     rate = d["exchange"]["rate"]
-                ):.6f}")
-
+                )
+                d["rentability"] = float(f"{renta:.6f}")
+                
                 wallet = {
                     "id": None,
                     "data": {
