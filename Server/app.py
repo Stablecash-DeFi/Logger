@@ -108,10 +108,9 @@ def receive_json():
                 wallet["data"]["value"] = wallet_value(wallet["data"]["stable_coins"], d["price"])
                 wallet["_id"] = hashlib.sha256(str(wallet["data"]).encode()).hexdigest()
 
-                db['trades'].insert_one(d)
-                if db['wallets'].find_one({"_id": wallet["_id"]}) is None:
-                    db['wallets'].insert_one(wallet)
-
+                # db['trades'].insert_one(d)
+                # if db['wallets'].find_one({"_id": wallet["_id"]}) is None:
+                #     db['wallets'].insert_one(wallet)
         return {'error': None}
     else:
         return {'error': 'Missing data'}
