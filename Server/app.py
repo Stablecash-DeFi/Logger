@@ -103,8 +103,8 @@ def receive_json():
                 d["wallet"]["id"] = hashlib.sha256(str(d["wallet"]["data"]).encode()).hexdigest()
                 renta = rentability(
                     amount = 100,
-                    from_currency = d["trade"]["exchange"]["from"]["currency"],
-                    to_currency = d["trade"]["exchange"]["to"]["currency"],
+                    from_currency = d["trade"]["exchange"]["from"][-3:],
+                    to_currency = d["trade"]["exchange"]["to"][-3:],
                     price = d["price"],
                     rate = d["trade"]["exchange"]["rate"]
                 )
