@@ -69,18 +69,15 @@ def receive_json():
                 data[i]["wallet"] = REF
 
                 d = {
-                    "trade": {
-                        "cost": {
-                            "gas": data[i]["trade"]["swapConfig"]["gasCosts"],
-                            "fee": data[i]["trade"]["swapConfig"]["feeCosts"],
-                            "total": data[i]["trade"]["swapConfig"]["transactionCost"]
-                        },
-                        "exchange": {
-                            "rate":  float(f'{data[i]["trade"]["swapConfig"]["exchangeRate"]:.6f}'),
-                            "from": data[i]["trade"]["pair"]["from"],
-                            "to": data[i]["trade"]["pair"]["to"]
-                        },
-                        "rentability": None,
+                    "cost": {
+                        "gas": data[i]["trade"]["swapConfig"]["gasCosts"],
+                        "fee": data[i]["trade"]["swapConfig"]["feeCosts"],
+                        "total": data[i]["trade"]["swapConfig"]["transactionCost"]
+                    },
+                    "exchange": {
+                        "rate":  float(f'{data[i]["trade"]["swapConfig"]["exchangeRate"]:.6f}'),
+                        "from": data[i]["trade"]["pair"]["from"],
+                        "to": data[i]["trade"]["pair"]["to"]
                     },
                     "price": {
                         "USD": 1.00,
@@ -88,16 +85,16 @@ def receive_json():
                         "SOL": data[i]["trade"]["solanaPrice"],
                         "MAT": data[i]["trade"]["maticPrice"]
                     },
+                    "rentability": None,
                     "timestamp": dt
                 }
-                renta = rentability(
+                d["rentability"] = float(f"{rentability(
                     amount = 100,
-                    from_currency = d["trade"]["exchange"]["from"][-3:],
-                    to_currency = d["trade"]["exchange"]["to"][-3:],
+                    from_currency = d["exchange"]["from"][-3:],
+                    to_currency = d["exchange"]["to"][-3:],
                     fiat_prices = d["price"],
-                    rate = d["trade"]["exchange"]["rate"]
-                )
-                d["trade"]["rentability"] = float(f"{renta:.6f}")
+                    rate = d["exchange"]["rate"]
+                ):.6f}")
 
                 wallet = {
                     "id": None,
@@ -134,7 +131,15 @@ def get_all_json():
 
     db['trades'].delete_many({})
     db['wallets'].delete_many({})
-    return {'size': len(result), 'data': result}
+    result = {
+        'size':
+        {
+            "trades": len(result["trades"]),
+            "wallets": len(result["wallets"])
+        },
+        'data': result
+    }
+    return result
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
