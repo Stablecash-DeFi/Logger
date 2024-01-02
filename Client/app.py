@@ -99,7 +99,7 @@ def main():
     headers = {
         'authorization': "Bearer {token}",
     }
-    json_filename = '/data/data.json'
+    json_filename = '/app/data/data.json'
     max_records = 50000
 
     fetcher = DataFetcher(url, headers)
@@ -113,7 +113,7 @@ def main():
     current_data.append(data)
 
     if len(current_data) >= max_records:
-        csv_filename = f"/data/data_{int(time.time())}.csv"
+        csv_filename = f"/app/data/data_{int(time.time())}.csv"
         CSVConverter.convert(current_data[:max_records], csv_filename)
         current_data = current_data[max_records:]
         if not current_data:
