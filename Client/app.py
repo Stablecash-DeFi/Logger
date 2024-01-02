@@ -97,29 +97,40 @@ def main():
         exit(1)
 
     headers = {
-        'authorization': "Bearer {token}",
+        'authorization': f"Bearer {token}",
     }
-    json_filename = '/app/data/data.json'
+    json_filename_trade = '/app/data/trades.json'
+    json_filename_wallet = '/app/data/wallets.json'
     max_records = 50000
 
     fetcher = DataFetcher(url, headers)
-    json_manager = JSONFileManager(json_filename)
 
     data = fetcher.fetch()
     if data == {"error": "Unauthorized"}:
-        print("error")
         exit(1)
-    current_data = json_manager.load_data()
-    current_data.append(data)
 
+    json_manager = JSONFileManager(json_filename_trade)
+    current_data = json_manager.load_data()
+    current_data += data["data"]["trades"]
     if len(current_data) >= max_records:
-        csv_filename = f"/app/data/data_{int(time.time())}.csv"
+        csv_filename = f"/app/data/trades_{int(time.time())}.csv"
         CSVConverter.convert(current_data[:max_records], csv_filename)
         current_data = current_data[max_records:]
         if not current_data:
             current_data = []
-
     json_manager.save_data(current_data)
+
+    json_manager = JSONFileManager(json_filename_wallet)
+    current_data = json_manager.load_data()
+    current_data += data["data"]["wallets"]
+    if len(current_data) >= max_records:
+        csv_filename = f"/app/data/wallets_{int(time.time())}.csv"
+        CSVConverter.convert(current_data[:max_records], csv_filename)
+        current_data = current_data[max_records:]
+        if not current_data:
+            current_data = []
+    json_manager.save_data(current_data)
+
     time.sleep(300)
 
 if __name__ == "__main__":
