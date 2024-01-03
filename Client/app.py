@@ -93,7 +93,7 @@ def compact_csv_files(directory: str, prefix: str):
     :param directory: The directory to search for CSV files.
     :param prefix: The prefix of the CSV files to combine.
     """
-    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv')])
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" not in f])
     while len(csv_files) >= 10:
         combined_csv = f"{directory}/{prefix}_{int(time.time())}_combined.csv"
         with open(combined_csv, 'w', newline='') as out_file:
