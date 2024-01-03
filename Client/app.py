@@ -4,7 +4,7 @@ import time
 import csv
 import os
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 class DataFetcher:
     """
@@ -73,6 +73,38 @@ class CSVConverter:
     """
 
     @staticmethod
+    def flatten_json(nested_json: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Flatten a nested json object into a single level.
+
+        :param nested_json: A dictionary representing a nested JSON object.
+        :return: A flat dictionary where each key represents a path through the original nested structure.
+        """
+        out = {}
+
+        def flatten(x: Union[Dict[str, Any], List[Any], Any], name: str = ''):
+            """
+            Recursive helper function that flattens the json.
+
+            :param x: The current object being processed.
+            :param name: Accumulated path string for the current object.
+            """
+            if isinstance(x, dict):
+                for a in x:
+                    flatten(x[a], name + a + '.')
+            elif isinstance(x, list):
+                i = 0
+                for a in x:
+                    flatten(a, name + str(i) + '.')
+                    i += 1
+            else:
+                out[name[:-1]] = x
+
+        flatten(nested_json)
+        return out
+
+
+    @staticmethod
     def convert(json_data: List[Dict[str, Any]], csv_filename: str):
         """
         Convert JSON data into a CSV file.
@@ -80,33 +112,44 @@ class CSVConverter:
         :param json_data: The JSON data to convert.
         :param csv_filename: The name of the file to save the CSV data to.
         """
+        flat_data = [CSVConverter.flatten_json(record) for record in json_data]
+        fieldnames = set()
+        for record in flat_data:
+            fieldnames.update(record.keys())
         with open(csv_filename, 'w', newline='') as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=json_data[0].keys())
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()
-            for record in json_data:
+            for record in flat_data:
                 writer.writerow(record)
 
 def compact_csv_files(directory: str, prefix: str):
     """
     Compacts CSV files in a specified directory, combining ten files at a time.
+    Handles CSV files with different fields by dynamically determining the complete set of fields.
 
     :param directory: The directory to search for CSV files.
     :param prefix: The prefix of the CSV files to combine.
     """
-    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" not in f])
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" not in str(f)])
+
     while len(csv_files) >= 10:
+        fieldnames = set()
+        for file in csv_files[:10]:
+            with open(file, 'r') as in_file:
+                reader = csv.DictReader(in_file)
+                fieldnames.update(reader.fieldnames)
         combined_csv = f"{directory}/{prefix}_{int(time.time())}_combined.csv"
         with open(combined_csv, 'w', newline='') as out_file:
-            writer = None
+            writer = csv.DictWriter(out_file, fieldnames=sorted(list(fieldnames)))
+            writer.writeheader()
             for file in csv_files[:10]:
                 with open(file, 'r') as in_file:
                     reader = csv.DictReader(in_file)
-                    if writer is None:
-                        writer = csv.DictWriter(out_file, fieldnames=reader.fieldnames)
-                        writer.writeheader()
-                    writer.writerows(reader)
-                file.unlink()  # Delete the file after processing
-        csv_files = csv_files[10:]  # Update the list after compacting ten files
+                    for row in reader:
+                        row_with_all_fields = {field: row.get(field, None) for field in fieldnames}
+                        writer.writerow(row_with_all_fields)
+                file.unlink()
+        csv_files = csv_files[10:]
 
 def main():
     """
@@ -167,7 +210,7 @@ def main():
     if stored is False:
         json_manager.save_data(current_data)
 
-    time.sleep(300)
+    time.sleep(30)
 
 if __name__ == "__main__":
     main()
