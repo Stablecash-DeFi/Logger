@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Union
 import zipfile
+from datetime import datetime
 
 class DataFetcher:
     """
@@ -123,7 +124,7 @@ class CSVConverter:
             for record in flat_data:
                 writer.writerow(record)
 
-def compact_csv_files(directory: str, prefix: str):
+def compact_csv_files(directory: str, prefix: str, date_id: str, keep_going: str = '', n: int = 0):
     """
     Compacts CSV files in a specified directory, combining ten files at a time.
     Handles CSV files with different fields by dynamically determining the complete set of fields.
@@ -131,28 +132,41 @@ def compact_csv_files(directory: str, prefix: str):
     :param directory: The directory to search for CSV files.
     :param prefix: The prefix of the CSV files to combine.
     """
-    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" not in str(f)])
-
-    while len(csv_files) >= 10:
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" not in str(f) and "compact" not in str(f)])
+    num = 10
+    if keep_going == 'force':
+        num = len(csv_files)
+    if num < 1:
+        num = 1
+    if num > 10:
+        num = 10
+    combined = False
+    n2 = 0
+    while len(csv_files) >= num:
+        combined = True
         fieldnames = set()
-        for file in csv_files[:10]:
+        for file in csv_files[:num]:
             with open(file, 'r') as in_file:
                 reader = csv.DictReader(in_file)
                 fieldnames.update(reader.fieldnames)
-        combined_csv = f"{directory}/{prefix}_{int(time.time())}_combined.csv"
+        combined_csv = f"{directory}/{prefix}_{date_id}_{n}-{n2}_combined.csv"
+        n2 += 1
+        print(f"combining -> {combined_csv}")
         with open(combined_csv, 'w', newline='') as out_file:
             writer = csv.DictWriter(out_file, fieldnames=sorted(list(fieldnames)))
             writer.writeheader()
-            for file in csv_files[:10]:
+            for file in csv_files[:num]:
                 with open(file, 'r') as in_file:
                     reader = csv.DictReader(in_file)
                     for row in reader:
                         row_with_all_fields = {field: row.get(field, None) for field in fieldnames}
                         writer.writerow(row_with_all_fields)
                 file.unlink()
-        csv_files = csv_files[10:]
-        
-def very_compact_csv_files(directory: str, prefix: str):
+        csv_files = csv_files[num:]
+    if keep_going != '' and keep_going != 'force' and combined is True:
+        compact_csv_files(directory, keep_going, date_id, 'force', n)
+
+def very_compact_csv_files(directory: str, prefix: str, date_id: str, keep_going: str = '', n: int = 0):
     """
     Compacts CSV files in a specified directory, combining ten files at a time.
     Handles CSV files with different fields by dynamically determining the complete set of fields.
@@ -160,31 +174,52 @@ def very_compact_csv_files(directory: str, prefix: str):
     :param directory: The directory to search for CSV files.
     :param prefix: The prefix of the CSV files to combine.
     """
-    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" in str(f)])
-
-    while len(csv_files) >= 10:
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" in str(f) and "compact" not in str(f)])
+    num = 10
+    if keep_going == 'force':
+        num = len(csv_files)
+    if num < 1:
+        num = 1
+    if num > 10:
+        num = 10
+    combined = False
+    while len(csv_files) >= num:
+        combined = True
         fieldnames = set()
-        for file in csv_files[:10]:
+        for file in csv_files[:num]:
             with open(file, 'r') as in_file:
                 reader = csv.DictReader(in_file)
                 fieldnames.update(reader.fieldnames)
-        name = f"{prefix}_{int(time.time())}_compact"
+        name = f"{prefix}_{date_id}_compact"
+        zip_file = f"archive_{date_id}.zip"
         combined_csv = f"{directory}/{name}.csv"
+        zip_path = f"{directory}/{zip_file}"
+        n = 0
+        while (os.path.exists(combined_csv) or os.path.exists(zip_path)) and keep_going != 'force':
+            n += 1
+            name = f"{prefix}_{date_id}_{n}_compact"
+            zip_file = f"archive_{date_id}_{n}.zip"
+            combined_csv = f"{directory}/{name}.csv"
+            zip_path = f"{directory}/{zip_file}"
+        print(f"compacting -> {combined_csv}")
         with open(combined_csv, 'w', newline='') as out_file:
             writer = csv.DictWriter(out_file, fieldnames=sorted(list(fieldnames)))
             writer.writeheader()
-            for file in csv_files[:10]:
+            for file in csv_files[:num]:
                 with open(file, 'r') as in_file:
                     reader = csv.DictReader(in_file)
                     for row in reader:
                         row_with_all_fields = {field: row.get(field, None) for field in fieldnames}
                         writer.writerow(row_with_all_fields)
                 file.unlink()
-        csv_files = csv_files[10:]
-        zip_file = f"{name}.zip"
-        zip_path = f"{directory}/{zip_file}"
-        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            zipf.write(csv_file, arcname=f'{name}.csv')
+        csv_files = csv_files[num:]
+        mode = 'a' if os.path.exists(zip_path) else 'w'
+        with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(combined_csv, arcname=f'{name}.csv')
+        print(combined_csv)
+        os.remove(combined_csv)
+    if keep_going != '' and keep_going != 'force' and combined is True:
+        very_compact_csv_files(directory, keep_going, date_id, 'force', n)
 
 def main():
     """
@@ -192,6 +227,8 @@ def main():
     """
     url = os.getenv('DATA_FETCHER_URL', None)
     token = os.getenv('BEARER_TOKEN', None)
+    date_id = str(datetime.today().strftime('%Y-%m-%d_%H-%M-%S'))
+    n = 0
 
     if url is None or token is None:
         exit(1)
@@ -201,7 +238,7 @@ def main():
     }
     json_filename_trade = '/app/data/trades.json'
     json_filename_wallet = '/app/data/wallets.json'
-    max_records = 10000
+    max_records_init = 10000
 
     fetcher = DataFetcher(url, headers)
 
@@ -209,44 +246,47 @@ def main():
     if data == {"error": "Unauthorized"}:
         exit(1)
 
-    json_manager = JSONFileManager(json_filename_trade)
-    current_data = json_manager.load_data()
-    current_data += data["data"]["trades"]
-    stored = False
-    print(len(current_data))
-    while len(current_data) >= max_records:
-        stored = True
-        csv_filename = f"/app/data/trades_{int(time.time())}.csv"
-        CSVConverter.convert(current_data[:max_records], csv_filename)
-        current_data = current_data[max_records:]
-        print(len(current_data), csv_filename)
-        if not current_data:
-            current_data = []
-        json_manager.save_data(current_data)
-        time.sleep(1)
-        compact_csv_files('/app/data', 'trades')
-        very_compact_csv_files('/app/data', 'trades')
-    if stored is False:
-        json_manager.save_data(current_data)
+    trade_manager = JSONFileManager(json_filename_trade)
+    trade_data = trade_manager.load_data()
+    trade_data += data["data"]["trades"]
 
-    json_manager = JSONFileManager(json_filename_wallet)
-    current_data = json_manager.load_data()
-    current_data += data["data"]["wallets"]
+    wallet_manager = JSONFileManager(json_filename_wallet)
+    wallet_data = wallet_manager.load_data()
+    wallet_data += data["data"]["wallets"]
     stored = False
-    while len(current_data) >= max_records:
+    n = 0
+    max_records = (len(wallet_data) if len(trade_data) >= max_records_init else max_records_init)
+    while len(wallet_data) >= max_records:
         stored = True
-        csv_filename = f"/app/data/wallets_{int(time.time())}.csv"
-        CSVConverter.convert(current_data[:max_records], csv_filename)
-        current_data = current_data[max_records:]
-        if not current_data:
-            current_data = []
-        json_manager.save_data(current_data)
-        time.sleep(1)
-        compact_csv_files('/app/data', 'wallets')
-        very_compact_csv_files('/app/data', 'wallets')
+        csv_filename = f"/app/data/wallets_{date_id}_{n}.csv"
+        print(f"saving {csv_filename} staying {len(wallet_data)}")
+        CSVConverter.convert(wallet_data[:max_records], csv_filename)
+        wallet_data = wallet_data[max_records:]
+        if not wallet_data:
+            wallet_data = []
+        wallet_manager.save_data(wallet_data)
+        n += 1
     if stored is False:
-        json_manager.save_data(current_data)
+        wallet_manager.save_data(wallet_data)
 
+    stored = False
+    n = 0
+    max_records = max_records_init
+    while len(trade_data) >= max_records:
+        stored = True
+        csv_filename = f"/app/data/trades_{date_id}_{n}.csv"
+        print(f"saving {csv_filename} staying {len(trade_data)}")
+        CSVConverter.convert(trade_data[:max_records], csv_filename)
+        trade_data = trade_data[max_records:]
+        if not trade_data:
+            trade_data = []
+        trade_manager.save_data(trade_data)
+        compact_csv_files('/app/data', 'trades', date_id, 'wallets', n)
+        very_compact_csv_files('/app/data', 'trades', date_id, 'wallets', n)
+        n += 1
+    if stored is False:
+        trade_manager.save_data(trade_data)
+    print("exit - waiting 30sec")
     time.sleep(30)
 
 if __name__ == "__main__":
