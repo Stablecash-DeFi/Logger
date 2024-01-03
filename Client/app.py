@@ -5,6 +5,7 @@ import csv
 import os
 from pathlib import Path
 from typing import Dict, Any, List, Union
+import zipfile
 
 class DataFetcher:
     """
@@ -150,6 +151,40 @@ def compact_csv_files(directory: str, prefix: str):
                         writer.writerow(row_with_all_fields)
                 file.unlink()
         csv_files = csv_files[10:]
+        
+def very_compact_csv_files(directory: str, prefix: str):
+    """
+    Compacts CSV files in a specified directory, combining ten files at a time.
+    Handles CSV files with different fields by dynamically determining the complete set of fields.
+
+    :param directory: The directory to search for CSV files.
+    :param prefix: The prefix of the CSV files to combine.
+    """
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv') if "combined" in str(f)])
+
+    while len(csv_files) >= 10:
+        fieldnames = set()
+        for file in csv_files[:10]:
+            with open(file, 'r') as in_file:
+                reader = csv.DictReader(in_file)
+                fieldnames.update(reader.fieldnames)
+        name = f"{prefix}_{int(time.time())}_compact"
+        combined_csv = f"{directory}/{name}.csv"
+        with open(combined_csv, 'w', newline='') as out_file:
+            writer = csv.DictWriter(out_file, fieldnames=sorted(list(fieldnames)))
+            writer.writeheader()
+            for file in csv_files[:10]:
+                with open(file, 'r') as in_file:
+                    reader = csv.DictReader(in_file)
+                    for row in reader:
+                        row_with_all_fields = {field: row.get(field, None) for field in fieldnames}
+                        writer.writerow(row_with_all_fields)
+                file.unlink()
+        csv_files = csv_files[10:]
+        zip_file = f"{name}.zip"
+        zip_path = f"{directory}/{zip_file}"
+        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(csv_file, arcname=f'{name}.csv')
 
 def main():
     """
@@ -190,6 +225,7 @@ def main():
         json_manager.save_data(current_data)
         time.sleep(1)
         compact_csv_files('/app/data', 'trades')
+        very_compact_csv_files('/app/data', 'trades')
     if stored is False:
         json_manager.save_data(current_data)
 
@@ -207,6 +243,7 @@ def main():
         json_manager.save_data(current_data)
         time.sleep(1)
         compact_csv_files('/app/data', 'wallets')
+        very_compact_csv_files('/app/data', 'wallets')
     if stored is False:
         json_manager.save_data(current_data)
 
