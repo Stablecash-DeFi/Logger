@@ -86,6 +86,28 @@ class CSVConverter:
             for record in json_data:
                 writer.writerow(record)
 
+def compact_csv_files(directory: str, prefix: str):
+    """
+    Compacts CSV files in a specified directory, combining ten files at a time.
+
+    :param directory: The directory to search for CSV files.
+    :param prefix: The prefix of the CSV files to combine.
+    """
+    csv_files = sorted([f for f in Path(directory).glob(f'{prefix}*.csv')])
+    while len(csv_files) >= 10:
+        combined_csv = f"{directory}/{prefix}_{int(time.time())}_combined.csv"
+        with open(combined_csv, 'w', newline='') as out_file:
+            writer = None
+            for file in csv_files[:10]:
+                with open(file, 'r') as in_file:
+                    reader = csv.DictReader(in_file)
+                    if writer is None:
+                        writer = csv.DictWriter(out_file, fieldnames=reader.fieldnames)
+                        writer.writeheader()
+                    writer.writerows(reader)
+                file.unlink()  # Delete the file after processing
+        csv_files = csv_files[10:]  # Update the list after compacting ten files
+
 def main():
     """
     Main function to orchestrate data fetching, processing, and saving.
@@ -101,7 +123,7 @@ def main():
     }
     json_filename_trade = '/app/data/trades.json'
     json_filename_wallet = '/app/data/wallets.json'
-    max_records = 50000
+    max_records = 10000
 
     fetcher = DataFetcher(url, headers)
 
@@ -112,24 +134,38 @@ def main():
     json_manager = JSONFileManager(json_filename_trade)
     current_data = json_manager.load_data()
     current_data += data["data"]["trades"]
-    if len(current_data) >= max_records:
+    stored = False
+    print(len(current_data))
+    while len(current_data) >= max_records:
+        stored = True
         csv_filename = f"/app/data/trades_{int(time.time())}.csv"
         CSVConverter.convert(current_data[:max_records], csv_filename)
         current_data = current_data[max_records:]
+        print(len(current_data), csv_filename)
         if not current_data:
             current_data = []
-    json_manager.save_data(current_data)
+        json_manager.save_data(current_data)
+        time.sleep(1)
+        compact_csv_files('/app/data', 'trades')
+    if stored is False:
+        json_manager.save_data(current_data)
 
     json_manager = JSONFileManager(json_filename_wallet)
     current_data = json_manager.load_data()
     current_data += data["data"]["wallets"]
-    if len(current_data) >= max_records:
+    stored = False
+    while len(current_data) >= max_records:
+        stored = True
         csv_filename = f"/app/data/wallets_{int(time.time())}.csv"
         CSVConverter.convert(current_data[:max_records], csv_filename)
         current_data = current_data[max_records:]
         if not current_data:
             current_data = []
-    json_manager.save_data(current_data)
+        json_manager.save_data(current_data)
+        time.sleep(1)
+        compact_csv_files('/app/data', 'wallets')
+    if stored is False:
+        json_manager.save_data(current_data)
 
     time.sleep(300)
 
