@@ -353,29 +353,6 @@ class MongoDBHandler:
         if not self.db['wallets'].find_one({"_id": wallet_data["_id"]}):
             self.db['wallets'].insert_one(wallet_data)
 
-    def retrieve_and_clear_data(self) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Retrieves all documents from 'trades' and 'wallets' collections, then clears these collections.
-        :return: A dictionary containing lists of trade and wallet documents.
-        """
-        result = {"trades": [], "wallets": []}
-
-        # Retrieve and append documents from 'trades' collection
-        for document in self.db['trades'].find():
-            del document["_id"]
-            result["trades"].append(document)
-
-        # Retrieve and append documents from 'wallets' collection
-        for document in self.db['wallets'].find():
-            del document["_id"]
-            result["wallets"].append(document)
-
-        # Clear both collections
-        self.db['trades'].delete_many({})
-        self.db['wallets'].delete_many({})
-
-        return result
-
 app = Bottle()
 MONGO = MongoDBHandler('mongodb://mongodb:27017/', 'json_db')
 
@@ -418,30 +395,6 @@ def receive_json():
         MONGO.insert_trade(processed_data[index]["trade"])
         MONGO.insert_wallet(processed_data[index]["wallet"])
     return {'error': None}
-
-@app.get('/')
-def get_all_json():
-    """
-    Endpoint to retrieve JSON data since last GET request.
-    This function validates the authorization token, retrieve data from db and delete those JSON data.
-    """
-    auth_token = request.headers.get('Authorization')
-    expected_token = os.getenv('API_KEY')
-
-    if auth_token != f'Bearer {expected_token}':
-        response.status = 401
-        return {'error': 'Unauthorized'}
-
-    result = MONGO.retrieve_and_clear_data()
-    result = {
-        'size':
-        {
-            "trades": len(result["trades"]),
-            "wallets": len(result["wallets"])
-        },
-        'data': result
-    }
-    return result
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
